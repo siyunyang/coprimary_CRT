@@ -110,7 +110,7 @@ calCovbetas <- function(vars,rho01,rho2,cv, sigmaz.square, m, K){
 
 
 calSampleSize_omnibus <- function(beta, vars,rho01,rho2,cv, m,r=0.5, K=2, alpha=0.05, dpower=0.8){
-n=2
+n=2*K+2
 sigmaz.square <- r*(1-r) 
 power=0
 while(power<dpower){
@@ -118,22 +118,23 @@ while(power<dpower){
 omega <- calCovbetas(vars,rho01,rho2,cv, sigmaz.square, m, K)
 #Variance Inflation of coprimary outcomes
 tau <- n*t(beta) %*% solve(omega) %*% beta
-Fscore <- qf(1-0.05, K-1, n-K-1, ncp=0, lower.tail = TRUE, log.p = FALSE)
-power <-1- pf(Fscore, K-1, n-K-1, tau, lower.tail = TRUE, log.p = FALSE)
+Fscore <- qf(1-0.05, df1=K, df2=n-2*K, ncp=0, lower.tail = TRUE, log.p = FALSE)
+power <-1- pf(Fscore, df1=K, df2=n-2*K, ncp=tau, lower.tail = TRUE, log.p = FALSE)
 }
 return(n)
 }
 nraw <- calSampleSize_omnibus(beta=matrix(c(0.3, 0.3)* mar_sd, 2,1), vars= mar_var, rho01, rho2,cv=CV, m=17, r=0.5, K=2, alpha=0.05, dpower=0.8)
-# 38
+# 48
 nraw <- calSampleSize_omnibus(beta=matrix(c(0.4, 0.4)* mar_sd, 2,1), vars= mar_var, rho01, rho2,cv=CV, m=17, r=0.5, K=2, alpha=0.05, dpower=0.8)
-# 24
+# 30
 nraw <- calSampleSize_omnibus(beta=matrix(c(0.5, 0.5)* mar_sd, 2,1), vars= mar_var, rho01, rho2,cv=CV, m=17, r=0.5, K=2, alpha=0.05, dpower=0.8)
-# 16
-
+# 22
 
 # homogeneity sample size
+
+
 calSampleSize_homo <- function(beta, vars,rho01,rho2,cv, m,r=0.5, K=2, alpha=0.05, dpower=0.8){
-  n=2
+  n=2*K+2
   sigmaz.square <- r*(1-r) 
   power=0
   L <- matrix(c(1,-1),1, 2)
@@ -143,8 +144,8 @@ calSampleSize_homo <- function(beta, vars,rho01,rho2,cv, m,r=0.5, K=2, alpha=0.0
     omega <- calCovbetas(vars,rho01,rho2,cv, sigmaz.square, m, K)
     #Variance Inflation of coprimary outcomes
     tau <- n*t(L%*%beta) %*% solve(L%*%omega%*%t(L)) %*%(L%*% beta)
-    Fscore <- qf(1-0.05, K-1, n-K-1, ncp=0, lower.tail = TRUE, log.p = FALSE)
-    power <-1- pf(Fscore, K-1, n-K-1, tau, lower.tail = TRUE, log.p = FALSE)
+    Fscore <- qf(1-0.05, df1=K-1, df2=n-2*K-1, ncp=0, lower.tail = TRUE, log.p = FALSE)
+    power <-1- pf(Fscore, df1=K-1, df2=n-2*K-1, ncp=tau, lower.tail = TRUE, log.p = FALSE)
     
   }
   return(n)
@@ -268,7 +269,8 @@ beta <- matrix(c(0.3*sqrt(vars[1]), 0.3*sqrt(vars[2])), 2,1)
 
 
 
-# power heatmap omnibus test
+# power omnibus test
+
 
 res= foreach(rho0=RHO0,.combine=cbind)%:%foreach(rho1R=RHO1R,.combine=cbind)%:%foreach(rho_2=RHO2,.combine=cbind)%do%  
   
@@ -284,8 +286,8 @@ res= foreach(rho0=RHO0,.combine=cbind)%:%foreach(rho1R=RHO1R,.combine=cbind)%:%f
     omega <- calCovbetas(vars,rho01,rho2,cv, sigmaz.square, m, K)
     #Variance Inflation of coprimary outcomes
     tau <- n*t(beta) %*% solve(omega) %*% beta
-    Fscore <- qf(1-0.05, K-1, n-K-1, ncp=0, lower.tail = TRUE, log.p = FALSE)
-    power <-1- pf(Fscore, K-1, n-K-1, tau, lower.tail = TRUE, log.p = FALSE)
+    Fscore <- qf(1-0.05, df1=K, df2=n-2*K, ncp=0, lower.tail = TRUE, log.p = FALSE)
+    power <-1- pf(Fscore, df1=K, df2=n-2*K, tau, lower.tail = TRUE, log.p = FALSE)
     row <- c(m,cv, rho0,rho1R, rho_2,tau, power)
     data.frame(row)
   }
@@ -295,7 +297,8 @@ res <- t(res)
 colnames(res) <- c("m","CV", "rho_0","rho1R","rho_2","tau", "power")
 
 res <- as.data.frame(res)
-range(res$power)  # 0.85, 1.00
+range(res$power)  # 0.76, 1.00
+ll <- round(range(res$power),2)[1]
 
 res$rho_2 <- factor(res$rho_2 , levels = c("0.4", "0.79"), 
                     labels = c(expression(paste(rho[2],"=0.4")),expression(paste(rho[2],"=0.79"))))
@@ -303,13 +306,11 @@ res$rho_2 <- factor(res$rho_2 , levels = c("0.4", "0.79"),
 
 p <- ggplot(res, aes(rho_0, rho1R, fill= power)) + 
   geom_tile()+
-  scale_fill_gradient(low="yellow", high="brown",breaks=seq(0.8,1,0.02))+  
+  scale_fill_gradient(low="yellow", high="brown",breaks=seq(ll,1,0.04))+  
   #scale_fill_gradient(low = "#56B1F7",high ="#132B43" )+  
   geom_point(aes(x= 0.05,y= 1.4),colour="black", size=2)+
   labs(x = expression(rho[0]^1), y= expression(rho[1]/rho[0]^1))+
   facet_wrap(~ rho_2, scales = "free_x",labeller = label_parsed)
-
-p
 ggsave(paste("heatmap_omnibus",Sys.Date(),".png", sep= "_"), plot=p, width = 8, height = 6, units =  "in")
 
 # power heatmap homogeneity test
@@ -332,8 +333,8 @@ res= foreach(rho0=RHO0,.combine=cbind)%:%foreach(rho1R=RHO1R,.combine=cbind)%:%f
     omega <- calCovbetas(vars,rho01,rho2,cv, sigmaz.square, m, K)
     #Variance Inflation of coprimary outcomes
     tau <- n*t(L%*%beta) %*% solve(L%*%omega%*%t(L)) %*%(L%*% beta)
-    Fscore <- qf(1-0.05, df1=K-1, df2=n-K-1, ncp=0, lower.tail = TRUE, log.p = FALSE)
-    power <-1- pf(Fscore, df1=K-1, df2=n-K-1, ncp=tau, lower.tail = TRUE, log.p = FALSE)
+    Fscore <- qf(1-0.05, df1=K-1, df2=n-2*K-1, ncp=0, lower.tail = TRUE, log.p = FALSE)
+    power <-1- pf(Fscore, df1=K-1, df2=n-2*K-1, ncp=tau, lower.tail = TRUE, log.p = FALSE)
     row <- c(m,cv, rho0,rho1R, rho_2,tau, power)
     data.frame(row)
   }
@@ -343,7 +344,7 @@ res <- t(res)
 colnames(res) <- c("m","CV", "rho_0","rho1R","rho_2","tau", "power")
 
 res <- as.data.frame(res)
-range(res$power) #
+range(res$power) # 0.25, 0.98
 res$rho_2 <- factor(res$rho_2 , levels = c("0.4", "0.79"), 
                     labels = c(expression(paste(rho[2],"=0.4")),expression(paste(rho[2],"=0.79"))))
 
@@ -354,8 +355,6 @@ p <- ggplot(res, aes(rho_0, rho1R, fill= power)) +
   geom_point(aes(x= 0.05,y= 1.4),colour="black", size=2)+
   labs(x = expression(rho[0]^1), y= expression(rho[1]/rho[0]^1))+
   facet_wrap(~ rho_2, scales = "free_x",labeller = label_parsed)
-
-p
 ggsave(paste("heatmap_homogeneity",Sys.Date(),".png", sep= "_"), plot=p, width = 8, height = 6, units =  "in")
 
 
