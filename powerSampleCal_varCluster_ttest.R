@@ -45,7 +45,7 @@ calPower_ttestIU_var <- function(betas,deltas,vars,rho01,rho2,N,r,m,K,alpha,cv)
       }
     }
    # check for matrix positive definite
-    if( min( eigen(SigmaE_Matrix)) <= 1e-08 ) 
+    if( min( eigen(SigmaE_Matrix)$values) <= 1e-08 ) 
       {print("Warning: the resulting covariance matrix Sigma_E is not positive definite. Check the input of rho01 and rho2.")}
     return(SigmaE_Matrix)
   }
@@ -64,7 +64,7 @@ calPower_ttestIU_var <- function(betas,deltas,vars,rho01,rho2,N,r,m,K,alpha,cv)
     }
   }
    # check for matrix positive definite
-  if( min( eigen(SigmaP_Matrix)) <= 1e-08 ) 
+  if( min( eigen(SigmaP_Matrix)$values) <= 1e-08 ) 
   {print("Warning: the resulting covariance matrix Sigma_phi is not positive definite. Check the input of rho01 and rho2.")}
   return(SigmaP_Matrix)
   }
