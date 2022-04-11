@@ -5,8 +5,8 @@ theme_set(theme_grey(base_size = 12))
 theme_set(theme_bw(base_size = 16))
 
 # source functions
-source("powerSampleCal_varCluster_ttest_SY.R")
-source("EM_standard_generalf_K2_function.R")
+source("powerSampleCal_varCluster_ttest.R")
+source("EM_standard_K2_function.R")
 
 # read in data
 KDD2 <- read.csv("Secondary outcomes_K-DPP trial.csv")
@@ -25,7 +25,7 @@ KDD1$sysbp_c <- KDD1$sysbp2-KDD1$sysbp0
 KDD1$diabp_c <- KDD1$diabp2-KDD1$diabp0
 
 
-myVars <- c("pcs0", "mcs0", "sf6d0", "pf0", "sf0", "sysbp_c", "diabp_c", "idrs_c")
+myVars <- c("pcs0", "mcs0", "sf6d0", "pf0", "sf0", "sysbp_c", "diabp_c")
 tab3 <- CreateTableOne(vars = myVars, strata = "arms0" , data = KDD1)
 print(tab3,  formatOptions = list(big.mark = ","))
 
@@ -178,7 +178,7 @@ colnames(res) <- c( "sysbp_c","diabp_c", "n")
 #################################
 ###### heat map vary ICC values #
 ##################################
-
+r <- 0.5
 sigmaz.square <- r*(1-r) 
 #####function to construct covariance matrix Sigma_E for Y_i########
 constrRiE <- function(rho01,rho2,K,vars)
